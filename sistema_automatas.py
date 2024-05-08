@@ -1,36 +1,30 @@
+import tkinter as tk
+from tkinter import simpledialog
+
 def crear_matriz(filas, columnas):
     # Inicializar la matriz con espacios en blanco
     matriz = [[' ' for _ in range(columnas + 1)] for _ in range(filas + 1)]
     return matriz
 
-def ingresar_estados(matriz):
-    # Pedir al usuario que ingrese los estados
-    print("\nIngresa los estados, separados por espacios:")
-    estados = input().split()
-
+def ingresar_estados(matriz, estados_input):
     # Colocar los estados en la primer columna de la matriz
+    estados = estados_input.split()
     for i, estado in enumerate(estados):
         matriz[i+1][0] = estado
 
-def ingresar_alfabeto(matriz, columnas):
-    # Pedir al usuario que ingrese los elementos del alfabeto
-    print("\nIngresa los elementos del alfabeto, separados por espacios:")
-    elementos = input().split()
-
+def ingresar_alfabeto(matriz, elementos_input):
     # Colocar los elementos del alfabeto en la primer fila de la matriz
+    elementos = elementos_input.split()
     for j, elemento in enumerate(elementos):
         matriz[0][j+1] = elemento
 
 def ingresar_transiciones(matriz):
-    filas = len(matriz) - 1
-    columnas = len(matriz[0]) - 1
-
-    for i in range(filas):
-        for j in range(columnas):
-            estado = matriz[i+1][0]
-            elemento = matriz[0][j+1]
-            transicion = input(f"Ingrese la transición para el estado {estado} y el elemento {elemento}: ")
-            matriz[i+1][j+1] = transicion
+    for i in range(1, len(matriz)):
+        for j in range(1, len(matriz[0])):
+            estado = matriz[i][0]
+            elemento = matriz[0][j]
+            transicion = simpledialog.askstring("Transición", f"Ingrese la transición para el estado {estado} y el elemento {elemento}:")
+            matriz[i][j] = transicion if transicion else ' '
 
 def verificar_transiciones(matriz):
     nuevas_filas = []
@@ -45,14 +39,6 @@ def verificar_transiciones(matriz):
     # Insertar las nuevas filas en la matriz
     for index, (pos, fila) in enumerate(nuevas_filas):
         matriz.insert(pos + index, fila)
-
-
-def imprimir_matriz(matriz):
-    for fila in matriz:
-        for elemento in fila:
-            print(elemento, end='\t')
-        print()
-
 
 def convertir_afnd_a_afd(matriz):
     estados_afnd = [fila[0] for fila in matriz[1:]]
@@ -96,39 +82,74 @@ def convertir_afnd_a_afd(matriz):
     # Determinar los estados finales del AFD
     estados_finales_afd = [estado for estado in estados_afd if any(fin in estado for fin in estados_finales)]
 
-    # Imprimir todos los estados del AFD
-    print("\nEstados del AFD:")
+    # Construir una cadena de texto para representar la tabla
+    resultado = "Estados del AFD:\n"
     for estado in estados_afd:
-        print(estado)
+        resultado += str(estado) + "\n"
 
-    return estados_afd, transiciones_afd, estados_finales_afd
+    resultado += "\nTransiciones del AFD:\n"
+    for transicion, destino in transiciones_afd.items():
+        resultado += f"{transicion} -> {destino}\n"
 
+    return resultado
 
-# Ejemplo de uso:
 def main():
-    # Pedir al usuario las dimensiones de la matriz
-    filas = int(input("Ingresa el número de estados: "))
-    columnas = int(input("Ingresa el tamaño del alfabeto: "))
+    root = tk.Tk()
+    root.title("Convertidor AFND a AFD")
 
-    # Crear la matriz
-    matriz = crear_matriz(filas, columnas)
+    # Variables para almacenar la entrada del usuario
+    filas_var = tk.StringVar()
+    columnas_var = tk.StringVar()
+    estados_var = tk.StringVar()
+    alfabeto_var = tk.StringVar()
 
-    # Ingresar los estados en la matriz
-    ingresar_estados(matriz)
+    # Función para ejecutar la conversión
+    def convertir():
+        # Obtener las entradas del usuario
+        filas = int(filas_var.get())
+        columnas = int(columnas_var.get())
+        estados_input = estados_var.get()
+        elementos_input = alfabeto_var.get()
 
-    # Ingresar los elementos del alfabeto en la matriz
-    ingresar_alfabeto(matriz, columnas)
+        # Crear la matriz
+        matriz = crear_matriz(filas, columnas)
 
-    # Ingresar las transiciones en la matriz
-    ingresar_transiciones(matriz)
+        # Ingresar los estados en la matriz
+        ingresar_estados(matriz, estados_input)
 
-    # Verificar y modificar la matriz según las condiciones
-    verificar_transiciones(matriz)
+        # Ingresar los elementos del alfabeto en la matriz
+        ingresar_alfabeto(matriz, elementos_input)
 
-    # Convertir el AFND a AFD
-    afd = convertir_afnd_a_afd(matriz)
+        # Ingresar las transiciones en la matriz
+        ingresar_transiciones(matriz)
 
-    # Imprimir el resultado del AFD
-    print("Transiciones del AFD:", afd[1])
+        # Verificar y modificar la matriz según las condiciones
+        verificar_transiciones(matriz)
+
+        # Convertir el AFND a AFD y obtener la tabla resultante
+        tabla_resultante = convertir_afnd_a_afd(matriz)
+
+        # Limpiar el widget tk.Text y agregar la tabla resultante
+        resultado_text.delete(1.0, tk.END)
+        resultado_text.insert(tk.END, tabla_resultante)
+
+    # Crear widgets de entrada
+    tk.Label(root, text="Número de estados:").pack()
+    tk.Entry(root, textvariable=filas_var).pack()
+    tk.Label(root, text="Tamaño del alfabeto:").pack()
+    tk.Entry(root, textvariable=columnas_var).pack()
+    tk.Label(root, text="Estados (separados por espacios):").pack()
+    tk.Entry(root, textvariable=estados_var).pack()
+    tk.Label(root, text="Elementos del alfabeto (separados por espacios):").pack()
+    tk.Entry(root, textvariable=alfabeto_var).pack()
+
+    # Botón para convertir
+    tk.Button(root, text="Convertir", command=convertir).pack()
+
+    # Widget tk.Text para mostrar el resultado
+    resultado_text = tk.Text(root, height=10, width=40)
+    resultado_text.pack()
+
+    root.mainloop()
 
 main()
